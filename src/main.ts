@@ -38,7 +38,7 @@ export const SWAGGER_API_CURRENT_VERSION = "1.0";
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup(SWAGGER_API_ROOT, app, document);
-  app.enableCors();
+  app.enableCors({ origin: "http://localhost:4200" });
   app.use(helmet());
   app.use(
     rateLimiter.rateLimit({

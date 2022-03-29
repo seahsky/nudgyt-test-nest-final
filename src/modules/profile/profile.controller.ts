@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProfileService, IGenericMessageBody } from "./profile.service";
 import { PatchProfilePayload } from "./payload/patch.profile.payload";
 import { IProfile } from "./profile.model";
+import { ListProfileResponse } from "./response/list-profile-response";
 
 /**
  * Profile Controller
@@ -27,6 +28,26 @@ export class ProfileController {
    * @param profileService
    */
   constructor(private readonly profileService: ProfileService) {}
+
+  /**
+   * Retrieves all created profile
+   * @param username the profile given username to fetch
+   * @returns {Promise<IProfile>} queried profile data
+   */
+  @Get(":page")
+  @UseGuards(AuthGuard("jwt"))
+  @ApiResponse({ status: 200, description: "Fetch Profile Request Received" })
+  @ApiResponse({ status: 400, description: "Fetch Profile Request Failed" })
+  async getProfiles(@Param("page") page: number): Promise<ListProfileResponse> {
+    const profile = await this.profileService.list(page);
+    if (!profile) {
+      throw new BadRequestException(
+        "There are no profile created in database.",
+      );
+    }
+    const totalCount = await this.profileService.getTotalCount();
+    return { data: profile, page, totalCount };
+  }
 
   /**
    * Retrieves a particular profile

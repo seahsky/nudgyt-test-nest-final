@@ -35,6 +35,8 @@ export class ProfileService {
     @InjectModel("Profile") private readonly profileModel: Model<IProfile>,
   ) {}
 
+  private PAGE_SIZE = 10;
+
   /**
    * Fetches a profile from database by UUID
    * @param {string} id
@@ -45,12 +47,43 @@ export class ProfileService {
   }
 
   /**
+   * Fetches all created profiles from database
+   * @param {number} page
+   * @returns {Promise<IProfile[]>} queried profile data
+   */
+  list(page: number): Promise<IProfile[]> {
+    return this.profileModel
+      .find({})
+      .select("-password")
+      .limit(this.PAGE_SIZE)
+      .skip(page * this.PAGE_SIZE)
+      .exec();
+  }
+
+  /**
    * Fetches a profile from database by username
    * @param {string} username
    * @returns {Promise<IProfile>} queried profile data
    */
   getByUsername(username: string): Promise<IProfile> {
     return this.profileModel.findOne({ username }).exec();
+  }
+
+  /**
+   * Fetches a profile from database by email
+   * @param {string} email
+   * @returns {Promise<IProfile>} queried profile data
+   */
+  getByEmail(email: string): Promise<IProfile> {
+    return this.profileModel.findOne({ email }).exec();
+  }
+
+  /**
+   * Fetches total number of profile in database
+   * @returns {number} total count
+   */
+  getTotalCount(): Promise<number> {
+    return this.profileModel.count().exec();
   }
 
   /**
@@ -74,23 +107,23 @@ export class ProfileService {
    * @returns {Promise<IProfile>} created profile data
    */
   async create(payload: RegisterPayload): Promise<IProfile> {
-    const user = await this.getByUsername(payload.username);
-    if (user) {
+    const userByUsername = await this.getByUsername(payload.username);
+    if (userByUsername) {
       throw new NotAcceptableException(
         "The account with the provided username currently exists. Please choose another one.",
       );
     }
-    // this will auto assign the admin role to each created user
+
+    const userByEmail = await this.getByEmail(payload.email);
+    if (userByEmail) {
+      throw new NotAcceptableException(
+        "The account with the provided email currently exists. Please choose another one.",
+      );
+    }
+
     const createdProfile = new this.profileModel({
       ...payload,
       password: crypto.createHmac("sha256", payload.password).digest("hex"),
-      avatar: gravatar.url(payload.email, {
-        protocol: "http",
-        s: "200",
-        r: "pg",
-        d: "404",
-      }),
-      roles: AppRoles.ADMIN,
     });
 
     return createdProfile.save();

@@ -29,6 +29,13 @@ export class AppController {
     return this.appService.root();
   }
 
+  @Get("test")
+  @ApiResponse({ status: 200, description: "Request Received" })
+  @ApiResponse({ status: 400, description: "Request Failed" })
+  getTest(): string {
+    return "test";
+  }
+
   /**
    * Fetches request metadata
    * @param {Req} req the request body
